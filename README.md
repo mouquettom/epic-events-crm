@@ -16,7 +16,8 @@ The project uses a layered architecture to clearly separate the user interface, 
 - Password hashing with bcrypt
 - JWT token generation
 - User session management
-- Access token expiration
+- Access token checked again before every action
+- Automatic logout when the access token expires
 - Secure logout
 
 ### Employee Management
@@ -111,7 +112,7 @@ Permissions are enforced in the `services` layer, independently of the menus dis
 ## Architecture
 
 ```
-OC_P12_EpicEvents/
+epic-events-crm/
 │
 ├── .github/
 │   └── workflows/
@@ -125,6 +126,9 @@ OC_P12_EpicEvents/
 │   ├── services/
 │   ├── session/
 │   └── utils/
+│
+├── docs/
+│   └── Epic Events CRM - Diagramme UML.png
 │
 ├── migrations/
 ├── tests/
@@ -167,8 +171,12 @@ PostgreSQL
 - **Services** enforce business rules and permissions.
 - **Repositories** perform SQLAlchemy queries.
 - **Models** define database tables and their relationships.
-- `CurrentSession` stores the employee and token for the active session.
+- `CurrentSession` stores the employee and token for the active session, and checks the token before every action.
 - Utilities handle exceptions, passwords, JWTs, and Sentry.
+
+### Data Model
+
+The UML class diagram of the four entities (`Employee`, `Client`, `Contract`, `Event`) and their relationships is available in [`docs/Epic Events CRM - Diagramme UML.png`](docs/Epic%20Events%20CRM%20-%20Diagramme%20UML.png).
 
 ---
 
@@ -446,6 +454,8 @@ JWT tokens:
 - expire after sixty minutes;
 - use a secret key loaded from the `.env` file.
 
+The token is created at login and verified again before every action. When it has expired, is invalid, or belongs to another employee, the session is closed, the message "Votre session a expiré. Veuillez vous reconnecter." (or "Votre session n'est plus valide…") is displayed, and the application returns to the login screen.
+
 ### Sensitive Variables
 
 The following items must never be committed to the Git repository:
@@ -513,8 +523,8 @@ pytest
 At the time of the project's latest validation:
 
 ```
-490 tests passed
-93% coverage of the app package
+504 tests passed
+94% coverage of the app package
 
 ```
 
@@ -595,6 +605,7 @@ flake8 app tests main.py
 
 ## Main Business Rules
 
+- A session ends automatically when its access token expires (sixty minutes after login).
 - Only a management employee can manage employees.
 - An employee cannot delete their own account.
 - A sales employee who still owns clients or contracts cannot be deleted.
