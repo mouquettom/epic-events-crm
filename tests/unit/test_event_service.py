@@ -1182,6 +1182,57 @@ def test_validate_event_data_rejects_invalid_date_order(
         )
 
 
+def test_validate_event_data_compares_naive_and_aware_dates() -> None:
+    """Une date saisie (sans fuseau) se compare à une date relue en base."""
+
+    aware_end = (BASE_START + timedelta(hours=4)).astimezone()
+
+    assert (
+        EventService._validate_event_data(
+            start_date=BASE_START,
+            end_date=aware_end,
+            location="Paris",
+            attendees=10,
+        )
+        is None
+    )
+
+    with pytest.raises(
+        ValidationError,
+        match="La date de fin doit être postérieure à la date de début",
+    ):
+        EventService._validate_event_data(
+            start_date=BASE_START + timedelta(hours=5),
+            end_date=aware_end,
+            location="Paris",
+            attendees=10,
+        )
+
+
+def test_update_event_accepts_naive_start_with_stored_aware_end(
+    service,
+    session,
+) -> None:
+    support = make_employee(employee_id=3, role=Role.SUPPORT)
+    event = make_event(
+        support_id=support.id,
+        start_date=BASE_START.astimezone(),
+        end_date=BASE_END.astimezone(),
+    )
+    service.event_repository.get_by_id.return_value = event
+    service.event_repository.update.side_effect = lambda value: value
+    new_start = BASE_START + timedelta(hours=1)
+
+    result = service.update_event(
+        current_employee=support,
+        event_id=event.id,
+        start_date=new_start,
+    )
+
+    assert result.start_date == new_start
+    session.commit.assert_called_once_with()
+
+
 @pytest.mark.parametrize(
     "location",
     ["", None],
