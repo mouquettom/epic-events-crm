@@ -1,7 +1,8 @@
 from app.database.session import engine
 from app.models.base import Base
 
-from app import models
+# Importé pour enregistrer tous les modèles SQLAlchemy.
+from app import models  # noqa: F401
 
 
 def init_db():

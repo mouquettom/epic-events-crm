@@ -1,7 +1,7 @@
 from datetime import datetime, UTC
 from decimal import Decimal
 
-from sqlalchemy import String, Boolean, DateTime, Numeric, ForeignKey
+from sqlalchemy import Boolean, DateTime, Numeric, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
@@ -52,4 +52,7 @@ class Contract(Base):
     events = relationship('Event', back_populates='contract')
 
     def __repr__(self):
-        return f"Contract: id={self.id}, client_id={self.client_id}, is_signed={self.is_signed}"
+        return (
+            f"Contract: id={self.id}, client_id={self.client_id}, "
+            f"is_signed={self.is_signed}"
+        )

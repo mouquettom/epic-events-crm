@@ -1,7 +1,8 @@
 import logging
 from getpass import getpass
 
-import app.models
+# Importé pour enregistrer tous les modèles SQLAlchemy.
+import app.models  # noqa: F401
 
 from app.database.session import SessionLocal
 from app.models.employee import Employee, Role
