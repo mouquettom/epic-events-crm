@@ -513,8 +513,8 @@ pytest
 At the time of the project's latest validation:
 
 ```
-486 tests passed
-92% coverage of the app package
+490 tests passed
+93% coverage of the app package
 
 ```
 
