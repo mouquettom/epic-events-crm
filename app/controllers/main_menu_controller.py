@@ -3,8 +3,9 @@ from app.controllers.client_controller import ClientController
 from app.controllers.contract_controller import ContractController
 from app.controllers.employee_controller import EmployeeController
 from app.controllers.event_controller import EventController
-from app.models.employee import Role
+from app.models.employee import Employee, Role
 from app.session.current_session import CurrentSession
+from app.utils.exceptions import SessionExpiredError
 
 
 class MainMenuController:
@@ -37,22 +38,33 @@ class MainMenuController:
 
             self._display_header()
 
-            match employee.role:
-                case Role.GESTION:
-                    self._run_management_menu()
+            try:
+                self._run_role_menu(employee)
 
-                case Role.COMMERCIAL:
-                    self._run_commercial_menu()
+            except SessionExpiredError as error:
+                # La session a déjà été fermée : retour à l'écran
+                # de connexion.
+                print(f"\n{error}")
 
-                case Role.SUPPORT:
-                    self._run_support_menu()
+    def _run_role_menu(self, employee: Employee) -> None:
+        """Affiche le menu correspondant au rôle du collaborateur."""
 
-                case _:
-                    print(
-                        "\nRôle inconnu. "
-                        "Déconnexion de l'application."
-                    )
-                    self.auth_controller.logout()
+        match employee.role:
+            case Role.GESTION:
+                self._run_management_menu()
+
+            case Role.COMMERCIAL:
+                self._run_commercial_menu()
+
+            case Role.SUPPORT:
+                self._run_support_menu()
+
+            case _:
+                print(
+                    "\nRôle inconnu. "
+                    "Déconnexion de l'application."
+                )
+                self.auth_controller.logout()
 
     def _display_header(self) -> None:
         """Affiche les informations du collaborateur connecté."""
