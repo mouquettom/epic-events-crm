@@ -3,6 +3,8 @@ import logging
 from sqlalchemy.orm import Session
 
 from app.models.employee import Employee, Role
+from app.repositories.client_repository import ClientRepository
+from app.repositories.contract_repository import ContractRepository
 from app.repositories.employee_repository import EmployeeRepository
 from app.utils.exceptions import (
     AuthorizationError,
@@ -22,6 +24,8 @@ class EmployeeService:
     def __init__(self, session: Session) -> None:
         self.session = session
         self.repository = EmployeeRepository(session)
+        self.client_repository = ClientRepository(session)
+        self.contract_repository = ContractRepository(session)
 
     def create_employee(
         self,
@@ -243,6 +247,18 @@ class EmployeeService:
             raise ValidationError(
                 "Vous ne pouvez pas supprimer "
                 "votre propre compte."
+            )
+
+        # Clients et contrats exigent un commercial (commercial_id NOT NULL) :
+        # supprimer leur responsable violerait cette contrainte en base.
+        if self.client_repository.get_by_commercial_id(
+            employee.id
+        ) or self.contract_repository.get_by_commercial_id(
+            employee.id
+        ):
+            raise ValidationError(
+                "Impossible de supprimer ce collaborateur : "
+                "il est encore responsable de clients ou de contrats."
             )
 
         deleted_employee_id = employee.id

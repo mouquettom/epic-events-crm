@@ -7,7 +7,8 @@ from sqlalchemy import URL, create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
-import app.models
+# Importé pour enregistrer tous les modèles SQLAlchemy.
+import app.models  # noqa: F401
 from app.models.base import Base
 
 load_dotenv()

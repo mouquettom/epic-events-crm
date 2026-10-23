@@ -52,4 +52,7 @@ class Event(Base):
     support = relationship('Employee', back_populates='events')
 
     def __repr__(self) -> str:
-        return f"Event: id={self.id}, location='{self.location}', start_date='{self.start_date}'"
+        return (
+            f"Event: id={self.id}, location='{self.location}', "
+            f"start_date='{self.start_date}'"
+        )
