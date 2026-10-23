@@ -15,7 +15,12 @@ import app.models.event
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
-config.set_main_option('sqlalchemy.url', DATABASE_URL)
+# Alembic lit cette valeur via configparser : les « % » produits par
+# l'échappement du mot de passe doivent être doublés.
+config.set_main_option(
+    'sqlalchemy.url',
+    DATABASE_URL.render_as_string(hide_password=False).replace('%', '%%'),
+)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
