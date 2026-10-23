@@ -1,0 +1,106 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: epic_user
+          POSTGRES_PASSWORD: epic_password
+          POSTGRES_DB: epic_events
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U epic_user -d epic_events"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # Application database: Alembic migrations and tests/integration/test_connection.py
+      DB_HOST: localhost
+      DB_PORT: "5432"
+      DB_NAME: epic_events
+      DB_USER: epic_user
+      DB_PASSWORD: epic_password
+      # Test database used by tests/conftest.py
+      TEST_DB_HOST: localhost
+      TEST_DB_PORT: "5432"
+      TEST_DB_NAME: epic_events_test
+      TEST_DB_USER: epic_user
+      TEST_DB_PASSWORD: epic_password
+      # CI-only values: not real secrets, never used outside this throwaway environment
+      JWT_SECRET_KEY: ci-only-jwt-secret-key-not-used-outside-github-actions
+      SENTRY_DSN: ""
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Create the test database
+        run: docker exec ${{ job.services.postgres.id }} createdb -U epic_user epic_events_test
+
+      - name: Apply Alembic migrations
+        run: alembic upgrade head
+
+      - name: Check that models and migrations are in sync
+        run: alembic check
+
+      - name: Run tests with coverage
+        run: >-
+          pytest
+          --cov=app
+          --cov-report=term-missing
+          --cov-report=xml
+          --cov-report=html
+          --cov-fail-under=90
+
+      - name: Add coverage summary to the job page
+        if: ${{ !cancelled() && matrix.python-version == '3.13' }}
+        run: coverage report --format=markdown >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coverage report
+        if: ${{ !cancelled() && matrix.python-version == '3.13' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-report
+          path: |
+            coverage.xml
+            htmlcov/
+          if-no-files-found: ignore
+          retention-days: 14
