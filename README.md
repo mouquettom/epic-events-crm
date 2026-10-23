@@ -29,37 +29,36 @@ Features restricted to the management department:
 - Update an employee
 - Delete an employee
 - Prevent users from deleting their own account
+- Prevent the deletion of a sales employee who still owns clients or contracts
 - Assign `GESTION`, `COMMERCIAL`, and `SUPPORT` roles
 
 ### Client Management
 
 - Client creation by a sales employee
-- Viewing and updating clients according to permissions
-- Duplicate email detection
 - Automatic assignment of the client to the logged-in sales employee
-- Client deletion according to business rules
+- Duplicate email detection
+- Read-only access to all clients for every role
+- Updates restricted to the sales employee in charge of the client
 
 ### Contract Management
 
-- Create a contract for a client
-- Manage total and remaining amounts
+- Contract creation by the management department, linked to the client's sales employee
+- Manage total and remaining amounts (up to 99,999,999.99)
 - Sign a contract
-- View contracts
-- List unsigned contracts
-- List contracts with outstanding balances
-- Update contracts according to role and ownership
-- Contract deletion restricted to the management department
+- Read-only access to all contracts for every role
+- Updates by the management department or by the sales employee in charge of the contract
+- List of a sales employee's unsigned contracts
+- List of a sales employee's contracts with an outstanding balance
 
 ### Event Management
 
-- Create an event from a signed contract
+- Event creation by the sales employee in charge of a signed contract
 - Manage dates, location, number of attendees, and notes
-- View events according to role
-- Assign a support employee
-- Remove a support employee
-- List events without assigned support
-- Update events by the management department or assigned support employee
-- Event deletion restricted to the management department
+- Read-only access to all events for every role
+- Assignment (or reassignment) of a support employee by the management department
+- List of events without assigned support
+- List of the events assigned to the logged-in support employee
+- Updates restricted to the support employee assigned to the event
 
 ### Monitoring
 
@@ -74,35 +73,36 @@ Features restricted to the management department:
 
 ### GESTION
 
-The management department can, among other things:
+The management department can:
 
-- manage employees;
+- create, view, update, and delete employees;
 - view all clients;
-- view and update contracts;
-- view unsigned contracts and contracts with outstanding balances;
-- view and update all events;
-- assign or remove a support employee;
-- delete contracts and events.
+- create, view, and update all contracts;
+- view all events;
+- list events without assigned support;
+- assign a support employee to an event.
 
 ### COMMERCIAL
 
-A sales employee can, among other things:
+A sales employee can:
 
-- create and manage their clients;
-- create contracts for their own clients;
-- view and update their own contracts;
-- view their contracts with outstanding balances;
-- create an event for one of their signed contracts;
-- view events associated with their contracts.
+- create clients, which are automatically assigned to them;
+- view all clients and update their own clients;
+- view all contracts and update the contracts of their own clients;
+- list their unsigned contracts and their contracts with an outstanding balance;
+- create an event for a signed contract of one of their clients;
+- view all events.
 
 ### SUPPORT
 
-A support employee can, among other things:
+A support employee can:
 
-- view clients;
-- view contracts;
-- view events assigned to them;
-- update events assigned to them.
+- view all clients;
+- view all contracts;
+- view all events and list the events assigned to them;
+- update the events assigned to them.
+
+No role can delete clients, contracts, or events from the application.
 
 Permissions are enforced in the `services` layer, independently of the menus displayed in the interface.
 
@@ -513,8 +513,8 @@ pytest
 At the time of the project's latest validation:
 
 ```
-461 tests passed
-91% coverage of the app package
+490 tests passed
+93% coverage of the app package
 
 ```
 
@@ -545,14 +545,17 @@ htmlcov/index.html
 
 Every push to `main` and every pull request triggers the GitHub Actions workflow defined in `.github/workflows/ci.yml`. The badge at the top of this README shows the status of the latest run on `main`.
 
-For each supported Python version (3.11, 3.12 and 3.13), the workflow:
+A `Lint` job runs Flake8 with the project's `.flake8` configuration.
+
+For each supported Python version (3.11, 3.12 and 3.13), the `Tests` job:
 
 1. starts a PostgreSQL 16 service container;
 2. installs the dependencies from `requirements.txt`;
 3. creates the test database `epic_events_test`;
 4. applies the Alembic migrations with `alembic upgrade head`;
 5. runs `alembic check` to make sure the models and the migrations are in sync;
-6. runs the full test suite with coverage and fails if coverage of the `app` package drops below 90%.
+6. rolls every migration back with `alembic downgrade base`, then reapplies them;
+7. runs the full test suite with coverage and fails if coverage of the `app` package drops below 90%.
 
 The coverage table is added to the summary of the Python 3.13 job, and the HTML and XML reports are available as the `coverage-report` artifact of each run.
 
@@ -565,6 +568,8 @@ The workflow can also be started manually from the **Actions** tab (**Run workfl
 ## Code Quality
 
 ### Black
+
+Black is not part of `requirements.txt` and is not checked by the CI yet: applying it would reformat most files. Install it with `pip install black` if needed.
 
 Check formatting:
 
@@ -580,6 +585,8 @@ black app tests main.py
 
 ### Flake8
 
+The configuration lives in `.flake8` (88-character lines, migrations excluded). The CI runs the same command:
+
 ```
 flake8 app tests main.py
 ```
@@ -590,12 +597,16 @@ flake8 app tests main.py
 
 - Only a management employee can manage employees.
 - An employee cannot delete their own account.
+- A sales employee who still owns clients or contracts cannot be deleted.
+- Deleting a support employee unassigns the events they were in charge of.
 - Only a sales employee can create a client.
 - A sales employee can only update their own clients.
-- Only a sales employee can create a contract.
-- A contract can only be created for a client assigned to that sales employee.
-- The remaining amount cannot be negative or exceed the total amount.
-- An event can only be created for a signed contract.
+- Only the management department can create a contract.
+- A contract is automatically linked to the sales employee in charge of its client.
+- Amounts must be valid numbers and cannot exceed 99,999,999.99.
+- The total amount must be positive; the remaining amount cannot be negative or exceed the total amount.
+- An event can only be created by the sales employee in charge of a signed contract.
+- An event's end date must be after its start date, and the number of attendees must be positive.
 - Only the management department can assign a support employee.
 - A support employee can only update events assigned to them.
 - Unexpected technical errors are reported to Sentry.
@@ -604,14 +615,13 @@ flake8 app tests main.py
 
 ## Possible Improvements
 
-- Dynamically adapt submenus to each role's permissions
-- Explicitly prevent deletion of a client who has contracts
+- Allow reassigning clients to another sales employee (required before deleting a sales employee who owns clients)
 - Filter a sales employee's client list by ownership
 - Complete field validation when updating an employee
 - Add a password reset command
 - Centralize environment variable configuration
 - Add a web interface or REST API
-- Add Black and Flake8 checks to the continuous integration workflow
+- Apply Black formatting to the codebase and check it in the continuous integration workflow
 
 ---
 

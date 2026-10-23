@@ -48,7 +48,7 @@ def test_commercial_cannot_update_another_commercial_client(
     user_inputs = iter(
         [
             "1",
-            "other@functional.test",
+            other_commercial.email,
             "1",  # gérer clients
             "4",  # modifier client
             str(client_id),
@@ -75,7 +75,10 @@ def test_commercial_cannot_update_another_commercial_client(
 
     captured = capsys.readouterr()
 
-    assert "Vous ne pouvez modifier que les clients dont vous êtes responsable" in captured.out
+    assert (
+        "Vous ne pouvez modifier que les clients dont vous êtes responsable"
+        in captured.out
+    )
 
     verification_session = functional_session_factory()
 

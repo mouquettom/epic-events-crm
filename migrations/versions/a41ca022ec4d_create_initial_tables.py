@@ -81,3 +81,8 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_employee_email'), table_name='employee')
     op.drop_table('employee')
     # ### end Alembic commands ###
+
+    # drop_table ne supprime pas le type PostgreSQL créé pour la colonne
+    # employee.role : sans cela, un nouvel upgrade échoue avec
+    # « type "role" already exists ».
+    sa.Enum(name='role').drop(op.get_bind(), checkfirst=True)
