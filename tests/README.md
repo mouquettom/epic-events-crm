@@ -136,12 +136,24 @@ pytest --cov=app --cov-report=term-missing
 
 ------------------------------------------------------------------------
 
+# Intégration continue
+
+Le workflow GitHub Actions `.github/workflows/ci.yml` exécute toute la
+suite à chaque push sur `main` et à chaque pull request, avec Python
+3.11, 3.12 et 3.13 et une base PostgreSQL 16 éphémère. Il échoue si la
+couverture du package `app` descend sous 90 %.
+
+Les variables `TEST_DB_*` (voir `.env.example`) désignent la base de
+test, distincte de la base applicative.
+
+------------------------------------------------------------------------
+
 # Résultat
 
 À la date de rédaction de ce document :
 
--   481 tests exécutés
--   95 % de couverture de code
+-   461 tests exécutés
+-   91 % de couverture du package `app`
 
 Cette couverture concerne l'ensemble des couches applicatives :
 
