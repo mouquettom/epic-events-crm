@@ -1,5 +1,7 @@
 # Epic Events CRM
 
+[![CI](https://github.com/mouquettom/epic-events-crm/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/mouquettom/epic-events-crm/actions/workflows/ci.yml)
+
 Command-line CRM application developed in Python to manage employees, clients, contracts, and events for the fictional company **Epic Events**.
 
 The project uses a layered architecture to clearly separate the user interface, business rules, and data access.
@@ -111,6 +113,10 @@ Permissions are enforced in the `services` layer, independently of the menus dis
 ```
 OC_P12_EpicEvents/
 │
+├── .github/
+│   └── workflows/
+│       └── ci.yml
+│
 ├── app/
 │   ├── controllers/
 │   ├── database/
@@ -181,6 +187,7 @@ PostgreSQL
 - pytest-cov
 - Flake8
 - Black
+- GitHub Actions
 
 ---
 
@@ -244,11 +251,19 @@ DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=epic_events
 
+TEST_DB_USER=epic_user
+TEST_DB_PASSWORD=your_database_password
+TEST_DB_HOST=localhost
+TEST_DB_PORT=5432
+TEST_DB_NAME=epic_events_test
+
 JWT_SECRET_KEY=replace_with_a_long_random_secret
 
 SENTRY_DSN=
 SENTRY_ENVIRONMENT=development
 ```
+
+The `TEST_DB_*` variables point to a dedicated database used by the test suite (see [Test Database](#test-database)).
 
 The `.env` file contains sensitive information and must never be committed to version control.
 
@@ -339,6 +354,18 @@ Exit PostgreSQL:
 ```
 
 The database is now ready for Alembic migrations.
+
+### Test Database
+
+The test suite uses its own database so that it never touches application data. Functional tests empty its tables before and after each scenario.
+
+From the PostgreSQL prompt:
+
+```
+CREATE DATABASE epic_events_test OWNER epic_user;
+```
+
+The tables are created automatically by `tests/conftest.py` when the tests start.
 
 ---
 
@@ -486,12 +513,12 @@ pytest
 At the time of the project's latest validation:
 
 ```
-481 tests passed
-95% overall coverage
+461 tests passed
+91% coverage of the app package
 
 ```
 
-These values may change as the codebase evolves.
+These values may change as the codebase evolves. The CI job page always shows the current figures.
 
 ### Coverage
 
@@ -511,6 +538,27 @@ The report is then available at:
 htmlcov/index.html
 
 ```
+
+---
+
+## Continuous Integration
+
+Every push to `main` and every pull request triggers the GitHub Actions workflow defined in `.github/workflows/ci.yml`. The badge at the top of this README shows the status of the latest run on `main`.
+
+For each supported Python version (3.11, 3.12 and 3.13), the workflow:
+
+1. starts a PostgreSQL 16 service container;
+2. installs the dependencies from `requirements.txt`;
+3. creates the test database `epic_events_test`;
+4. applies the Alembic migrations with `alembic upgrade head`;
+5. runs `alembic check` to make sure the models and the migrations are in sync;
+6. runs the full test suite with coverage and fails if coverage of the `app` package drops below 90%.
+
+The coverage table is added to the summary of the Python 3.13 job, and the HTML and XML reports are available as the `coverage-report` artifact of each run.
+
+The database credentials and the JWT key used by the workflow are throwaway values that only exist inside the CI environment. No repository secret is required.
+
+The workflow can also be started manually from the **Actions** tab (**Run workflow**).
 
 ---
 
@@ -563,7 +611,7 @@ flake8 app tests main.py
 - Add a password reset command
 - Centralize environment variable configuration
 - Add a web interface or REST API
-- Automate checks with continuous integration
+- Add Black and Flake8 checks to the continuous integration workflow
 
 ---
 
