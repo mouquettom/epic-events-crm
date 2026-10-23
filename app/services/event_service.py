@@ -421,13 +421,29 @@ class EventService:
             )
 
     @staticmethod
+    def _as_aware(value: datetime) -> datetime:
+        """
+        Rend une date comparable à une date issue de PostgreSQL.
+
+        Les dates saisies dans la console n'ont pas de fuseau horaire,
+        alors que celles relues en base en ont un. Une date sans fuseau
+        est interprétée comme une heure locale.
+        """
+
+        if value.tzinfo is None:
+            return value.astimezone()
+
+        return value
+
+    @classmethod
     def _validate_event_data(
+        cls,
         start_date: datetime,
         end_date: datetime,
         location: str,
         attendees: int,
     ) -> None:
-        if end_date <= start_date:
+        if cls._as_aware(end_date) <= cls._as_aware(start_date):
             raise ValidationError(
                 "La date de fin doit être postérieure "
                 "à la date de début."

@@ -17,6 +17,8 @@ from app.utils.exceptions import (
 
 logger = logging.getLogger(__name__)
 
+MAX_CONTRACT_AMOUNT = Decimal("99999999.99")
+
 
 class ContractService:
     """Applique les règles métier relatives aux contrats."""
@@ -350,6 +352,18 @@ class ContractService:
             raise ValidationError(
                 f"{field_name} doit être un nombre valide."
             ) from error
+
+        # Decimal accepte "NaN" et "Infinity", qui ne sont pas des montants.
+        if not amount.is_finite():
+            raise ValidationError(
+                f"{field_name} doit être un nombre valide."
+            )
+
+        # Les colonnes Numeric(10, 2) refusent tout montant plus grand.
+        if abs(amount) > MAX_CONTRACT_AMOUNT:
+            raise ValidationError(
+                f"{field_name} ne peut pas dépasser 99 999 999,99."
+            )
 
         return amount.quantize(
             Decimal("0.01")

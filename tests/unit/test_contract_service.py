@@ -965,7 +965,18 @@ def test_normalize_amount_returns_quantized_decimal(
 
 @pytest.mark.parametrize(
     "value",
-    ["abc", None, object()],
+    [
+        "abc",
+        None,
+        object(),
+        "nan",
+        "NaN",
+        "inf",
+        "-Infinity",
+        Decimal("sNaN"),
+        float("nan"),
+        float("inf"),
+    ],
 )
 def test_normalize_amount_rejects_invalid_values(value) -> None:
     with pytest.raises(
@@ -976,6 +987,30 @@ def test_normalize_amount_rejects_invalid_values(value) -> None:
             value,
             "Montant",
         )
+
+
+@pytest.mark.parametrize(
+    "value",
+    ["100000000", "99999999.995", "1e30", "-1e30"],
+)
+def test_normalize_amount_rejects_amounts_too_large_for_database(
+    value,
+) -> None:
+    with pytest.raises(
+        ValidationError,
+        match="Montant ne peut pas dépasser 99 999 999,99",
+    ):
+        ContractService._normalize_amount(
+            value,
+            "Montant",
+        )
+
+
+def test_normalize_amount_accepts_largest_storable_amount() -> None:
+    assert ContractService._normalize_amount(
+        "99999999.99",
+        "Montant",
+    ) == Decimal("99999999.99")
 
 
 @pytest.mark.parametrize(

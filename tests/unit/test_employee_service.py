@@ -45,6 +45,10 @@ def session():
 def service(session):
     employee_service = EmployeeService(session)
     employee_service.repository = Mock()
+    employee_service.client_repository = Mock()
+    employee_service.client_repository.get_by_commercial_id.return_value = []
+    employee_service.contract_repository = Mock()
+    employee_service.contract_repository.get_by_commercial_id.return_value = []
     return employee_service
 
 
@@ -612,6 +616,40 @@ def test_delete_employee_rejects_self_deletion(
         service.delete_employee(
             current_employee=current_employee,
             employee_id=current_employee.id,
+        )
+
+    service.repository.delete.assert_not_called()
+    session.commit.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ("clients", "contracts"),
+    [
+        (["client"], []),
+        ([], ["contract"]),
+    ],
+)
+def test_delete_employee_rejects_commercial_with_clients_or_contracts(
+    service,
+    session,
+    clients,
+    contracts,
+) -> None:
+    commercial = make_employee(
+        employee_id=2,
+        role=Role.COMMERCIAL,
+    )
+    service.repository.get_by_id.return_value = commercial
+    service.client_repository.get_by_commercial_id.return_value = clients
+    service.contract_repository.get_by_commercial_id.return_value = contracts
+
+    with pytest.raises(
+        ValidationError,
+        match="encore responsable de clients ou de contrats",
+    ):
+        service.delete_employee(
+            current_employee=make_employee(employee_id=1),
+            employee_id=commercial.id,
         )
 
     service.repository.delete.assert_not_called()
