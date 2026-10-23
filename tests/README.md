@@ -152,8 +152,8 @@ test, distincte de la base applicative.
 
 À la date de rédaction de ce document :
 
--   490 tests exécutés
--   93 % de couverture du package `app`
+-   504 tests exécutés
+-   94 % de couverture du package `app`
 
 Cette couverture concerne l'ensemble des couches applicatives :
 

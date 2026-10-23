@@ -10,6 +10,10 @@ class AuthorizationError(EpicEventsError):
     """ L'utilisateur n'a pas le droit d'effectuer l'action. """
 
 
+class SessionExpiredError(AuthorizationError):
+    """ Le jeton de la session a expiré ou n'est plus valide. """
+
+
 class DuplicateError(EpicEventsError):
     """ Une ressource équivalente existe déjà. """
 
