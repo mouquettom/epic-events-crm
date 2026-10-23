@@ -81,6 +81,11 @@ jobs:
       - name: Check that models and migrations are in sync
         run: alembic check
 
+      - name: Check that migrations can be rolled back and reapplied
+        run: |
+          alembic downgrade base
+          alembic upgrade head
+
       - name: Run tests with coverage
         run: >-
           pytest
