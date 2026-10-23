@@ -397,6 +397,10 @@ class EventController:
                 "Aucun collaborateur connecté dans la session."
             )
 
+        # Le jeton est revérifié avant chaque action : s'il a expiré,
+        # la session est fermée et SessionExpiredError est levée.
+        self.current_session.ensure_token_is_valid()
+
         return employee
 
     @staticmethod

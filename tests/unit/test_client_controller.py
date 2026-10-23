@@ -7,6 +7,7 @@ from app.models.client import Client
 from app.models.employee import Employee, Role
 from app.session.current_session import CurrentSession
 from app.utils.exceptions import AuthorizationError, NotFoundError
+from app.utils.jwt import create_access_token
 
 
 def create_current_session(
@@ -23,7 +24,7 @@ def create_current_session(
     current_session = CurrentSession()
     current_session.login(
         employee=employee,
-        access_token="fake-token",
+        access_token=create_access_token(employee.id),
     )
 
     return current_session, employee

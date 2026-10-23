@@ -10,6 +10,7 @@ from app.utils.exceptions import (
     DuplicateError,
     NotFoundError,
 )
+from app.utils.jwt import create_access_token
 
 
 def create_current_session() -> tuple[CurrentSession, Employee]:
@@ -24,7 +25,7 @@ def create_current_session() -> tuple[CurrentSession, Employee]:
     current_session = CurrentSession()
     current_session.login(
         employee=manager,
-        access_token="fake-token",
+        access_token=create_access_token(manager.id),
     )
 
     return current_session, manager
